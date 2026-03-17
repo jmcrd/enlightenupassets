@@ -1,4 +1,9 @@
 /**
+ * ui_handlers.js
+ * Manages overlays, promotion dialogs, and button interactions.
+ */
+
+/**
  * Handles the UI when a puzzle is successfully completed by the user
  */
 function handlePuzzleComplete() {
@@ -6,9 +11,10 @@ function handlePuzzleComplete() {
     const statusEl = document.getElementById('status');
 
     if (statusEl) {
-        statusEl.innerHTML = "<span class='win'>Excellent!</span>";
+        statusEl.innerHTML = "<span class='win' style='color: #27ae60; font-weight: bold;'>Excellent!</span>";
     }
 
+    // Brief pause to celebrate before loading the next challenge
     setTimeout(() => {
         $('#success-overlay').fadeOut(300, function () {
             if (typeof loadNextPuzzle === "function") {
@@ -20,41 +26,40 @@ function handlePuzzleComplete() {
 
 /**
  * Handles the UI when a user makes an incorrect move.
- * Now keeps the overlay visible so the user can choose to Retry or see Solution.
+ * Keeps the error overlay visible so the user can interact with the buttons.
  */
 function triggerErrorEffects() {
     $('#myBoard').addClass('shake-board');
     
-    // Show the overlay (it now contains our two buttons)
+    // Show the overlay containing "Retry" and "Show Solution"
     $('#error-overlay').fadeIn(100);
     $('#promotion-dialog').fadeOut(200);
     
-    // Clear board states
+    // Clear selection states to allow a fresh retry
     if (typeof removeHighlights === "function") removeHighlights();
     selectedSquare = null;
 
-    // Remove the shake animation class after it finishes
+    // Cleanup the animation class
     setTimeout(() => {
         $('#myBoard').removeClass('shake-board');
     }, 500);
-    
-    // Note: We removed the auto-fadeOut so the user can interact with the buttons.
 }
 
 /**
  * Promotion Logic
+ * Dynamically updates piece images based on the current player's color
  */
 function showPromotionDialog(color) {
     lockBoard = true;
-    const piecePrefix = color === 'w' ? 'w' : 'b';
+    const piecePrefix = (color === 'w') ? 'w' : 'b';
 
     $('#promotion-dialog button').each(function () {
-        const p = $(this).attr('data-piece').toUpperCase();
+        const pieceType = $(this).attr('data-piece').toUpperCase();
         $(this)
             .find('img')
             .attr(
                 'src',
-                `https://chessboardjs.com/img/chesspieces/wikipedia/${piecePrefix}${p}.png`
+                `https://raw.githubusercontent.com/jmcrd/enlightenupassets/main/img/pieces/icpieces/${piecePrefix}${pieceType}.svg`
             );
     });
 
@@ -62,10 +67,10 @@ function showPromotionDialog(color) {
 }
 
 /**
- * EVENT LISTENERS
+ * EVENT LISTENERS (Delegated)
  */
 
-// 1. Promotion piece selection
+// 1. Handle Promotion selection
 $(document).on('click', '#promotion-dialog button', function () {
     const piece = $(this).attr('data-piece');
     if (pendingMove) {
@@ -77,12 +82,13 @@ $(document).on('click', '#promotion-dialog button', function () {
     }
 });
 
-// 2. Retry Button: Simply hide the error overlay
+// 2. Retry Button: Hide error overlay and let the user try again
 $(document).on('click', '#retry-btn', function() {
     $('#error-overlay').fadeOut(200);
+    // Board is already reset to position before the error in game.js logic
 });
 
-// 3. Show Solution Button: Hide overlay and trigger the auto-play sequence
+// 3. Show Solution Button: Hide overlay and let the computer play the mate
 $(document).on('click', '#show-solution-btn', function() {
     $('#error-overlay').fadeOut(200);
     if (typeof playSolution === "function") {
@@ -90,7 +96,7 @@ $(document).on('click', '#show-solution-btn', function() {
     }
 });
 
-// 4. Next Puzzle Button (in the status bar): Hide self and load new puzzle
+// 4. Next Puzzle Button: Manual skip or proceed after solution reveal
 $(document).on('click', '#next-puzzle-btn', function() {
     $(this).hide();
     if (typeof loadNextPuzzle === "function") {
