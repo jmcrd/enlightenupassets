@@ -1,0 +1,201 @@
+/* --- Brand & Loading --- */
+.brand-content { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center;
+    gap: 20px; 
+    width: 100%;
+}
+
+.brand-text-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+}
+
+.brand-img { 
+    max-width: 300px; 
+    height: 300px; 
+    filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.5)); 
+}
+
+.brand-logo { 
+    color: white; 
+    font-size: 2.5rem; 
+    letter-spacing: 5px; 
+    margin: 0; 
+    line-height: 1.2;
+}
+
+.brand-logo span { 
+    color: #4CAF50; 
+}
+
+.loading-bar-container { 
+    width: 260px; 
+    height: 4px; 
+    background: #333; 
+    border-radius: 2px; 
+    overflow: hidden; 
+    margin: 15px 0; 
+}
+
+.loading-bar { 
+    width: 0%; 
+    height: 100%; 
+    background: #4CAF50; 
+    animation: load 2s cubic-bezier(0.4, 0, 0.2, 1) forwards; 
+}
+
+/* --- Promotion Dialog --- */
+#promotion-dialog {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(44, 62, 80, 0.95);
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    z-index: 1000;
+    display: flex; gap: 10px;
+    border: 2px solid #27ae60;
+}
+
+#promotion-dialog button {
+    background: #34495e;
+    border: none; border-radius: 8px;
+    width: 15vmin; height: 15vmin;
+    max-width: 80px; max-height: 80px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, transform 0.1s;
+}
+#promotion-dialog button img { width: 100%; height: auto; }
+
+/* --- Status & Buttons --- */
+.status-container { 
+    margin-top: 15px; 
+    text-align: center; 
+    min-height: 50px; 
+}
+
+#status { 
+    font-size: 1.1rem; 
+    font-weight: bold; 
+}
+
+.restart-btn {
+    padding: 10px 25px;
+    background: #4CAF50;
+    color: white;
+    border: none; 
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* --- ARROW / DIRECTIONAL HIGHLIGHT LOGIC --- */
+
+/* The starting square */
+.highlight-from {
+    box-shadow: inset 0 0 5px 5px rgba(255, 235, 59, 0.4) !important;
+    background-color: rgba(255, 235, 59, 0.1) !important;
+}
+
+/* The target square (Container for the arrowhead) */
+.highlight-to {
+    position: relative;
+    box-shadow: inset 0 0 5px 5px rgba(255, 235, 59, 0.9) !important;
+    background-color: rgba(255, 235, 59, 0.4) !important;
+}
+
+/* Selection highlight */
+.highlight-sq {
+    box-shadow: inset 0 0 3px 3px rgba(76, 175, 80, 0.7) !important;
+}
+
+/* The Arrowhead: Using CSS pseudo-element */
+.highlight-to::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    margin-top: -12px;
+    margin-left: -12px;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 24px solid rgba(255, 215, 0, 1); /* Solid Gold */
+    pointer-events: none;
+    z-index: 10;
+    filter: drop-shadow(0 0 4px rgba(0,0,0,0.5));
+    display: none; /* Only shows when a direction class is added */
+}
+
+/* Direction Classes (Applied via JS) */
+.dir-up::after    { display: block; transform: translate(-50%, -50%) rotate(0deg); }
+.dir-down::after  { display: block; transform: translate(-50%, -50%) rotate(180deg); }
+.dir-left::after  { display: block; transform: translate(-50%, -50%) rotate(-90deg); }
+.dir-right::after { display: block; transform: translate(-50%, -50%) rotate(90deg); }
+
+.dir-up-right::after   { display: block; transform: translate(-50%, -50%) rotate(45deg); }
+.dir-up-left::after    { display: block; transform: translate(-50%, -50%) rotate(-45deg); }
+.dir-down-right::after { display: block; transform: translate(-50%, -50%) rotate(135deg); }
+.dir-down-left::after  { display: block; transform: translate(-50%, -50%) rotate(-135deg); }
+
+/* Knight Moves (L-shape) Special Indicator */
+.knight-move::after {
+    display: block;
+    content: 'L';
+    font-family: 'Arial', sans-serif;
+    font-weight: 900;
+    color: white;
+    background: #FFD700;
+    width: 28px; height: 28px;
+    border-radius: 5px;
+    border: none;
+    line-height: 28px;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+}
+
+/* Smooth transition for square markers */
+.square-55d63 {
+    transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+/* --- Next Puzzle Button --- */
+.next-btn {
+    display: block; 
+    margin: 20px auto;
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: white;
+    background-color: #27ae60; 
+    border: none;
+    border-radius: 50px; 
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+    transition: all 0.3s ease;
+    animation: pulse-green 2s infinite;
+}
+
+.next-btn:hover {
+    background-color: #2ecc71;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+}
+
+@keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+}

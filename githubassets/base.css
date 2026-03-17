@@ -1,0 +1,68 @@
+/* --- Global & Layout --- */
+body { 
+    background: #1a1a1a; 
+    color: #eee; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    min-height: 100vh; 
+    margin: 0; 
+    overflow: hidden; 
+    touch-action: manipulation; 
+}
+
+.board-wrapper { 
+    position: relative; 
+    width: 85vmin; 
+    max-width: 500px; 
+    margin: 0 auto;
+}
+
+#myBoard { 
+    width: 100%; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.7); 
+    border: 2px solid #333; 
+    border-radius: 4px;
+}
+
+
+.top-banner {
+    width: 100%;
+    max-width: 600px; /* Matches standard chessboard width */
+    margin: 10px auto;
+    text-align: center;
+    padding: 10px;
+}
+
+.banner-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    background-color: #f9f9f9b3;
+    padding: 8px 20px;
+    border-radius: 50px;
+    border: 1px solid #ddd;
+    transition: all 0.3s ease;
+}
+
+.banner-link:hover {
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.banner-link img {
+    width: 24px;
+    height: auto;
+    margin-right: 10px;
+}
+
+.banner-link span {
+    color: #333;
+    font-weight: bold;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+}
