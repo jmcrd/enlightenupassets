@@ -1,43 +1,43 @@
 /**
+ * interaction.js
+ * Handles clicks on the chessboard squares, promotions, and move finalization.
+ */
+
+/**
  * Handles clicks on the chessboard squares
  */
 function onSquareClick() {
     if (lockBoard) return;
 
+    // Use the attribute provided by Chessboard.js
     const square = $(this).attr('data-square');
 
-    // Toggle off if clicking the same square twice
+    // 1. Toggle off if clicking the same square twice
     if (selectedSquare === square) {
         if (typeof removeHighlights === "function") removeHighlights();
         selectedSquare = null;
         return;
     }
 
-    // If a square was already selected, this second click is a move attempt
+    // 2. If a square was already selected, this second click is a move attempt
     if (selectedSquare) {
         processMoveAttempt(selectedSquare, square);
         return;
     }
 
+    // 3. Initial selection of a piece
     const piece = game.get(square);
 
-    // Initial selection of a piece
     if (piece) {
         // Only allow selecting pieces of the side whose turn it is
         if (piece.color === game.turn()) {
             selectedSquare = square;
+            // Clear existing and add new highlight
+            if (typeof removeHighlights === "function") removeHighlights();
             $(this).addClass('highlight-sq');
         } else {
             // Visual feedback for clicking the wrong color
-            const $status = $('#status');
-            $status.removeClass('blink-status');
-            void $status[0].offsetWidth; // Trigger reflow for animation
-            $status.addClass('blink-status');
-
-            $('#myBoard').addClass('shake-board');
-            setTimeout(() => {
-                $('#myBoard').removeClass('shake-board');
-            }, 300);
+            triggerErrorEffects();
         }
     }
 }
@@ -60,6 +60,9 @@ function processMoveAttempt(source, target) {
         pendingMove = { from: source, to: target };
         if (typeof showPromotionDialog === "function") {
             showPromotionDialog(piece.color);
+        } else {
+            // Fallback to Queen if no dialog function exists
+            finalizeUIMove(source, target, 'q');
         }
     } else {
         // Standard move
@@ -74,27 +77,27 @@ function finalizeUIMove(source, target, promo) {
     const result = validateMove(source, target, promo);
 
     if (result.success) {
-        // Move was correct!
+        // 1. Update the visual board
         if (typeof updateUIBoard === "function") {
             updateUIBoard(result.fen);
         }
 
-        // --- NEW: Draw arrow for your own correct move ---
+        // 2. Draw the Gold Arrow for your own correct move
         if (typeof highlightMove === "function") {
             highlightMove(source, target);
         }
 
-        // Cleanup
+        // 3. Cleanup UI states
         $('#promotion-dialog').fadeOut(200);
         selectedSquare = null;
 
-        // Check if this was the last move of the puzzle
+        // 4. Check if puzzle is done
         if (result.isComplete) {
             if (typeof handlePuzzleComplete === "function") {
                 handlePuzzleComplete();
             }
         } else {
-            // Give a tiny delay so you can see your arrow before the computer moves
+            // Delay for computer response (if applicable)
             setTimeout(() => {
                 if (typeof checkAutoMove === "function") {
                     checkAutoMove();
@@ -103,18 +106,33 @@ function finalizeUIMove(source, target, promo) {
         }
     } else {
         // Move was incorrect
-        if (typeof triggerErrorEffects === "function") {
-            triggerErrorEffects();
-        }
-        
+        triggerErrorEffects();
         if (typeof removeHighlights === "function") removeHighlights();
         selectedSquare = null;
     }
 }
 
 /**
- * We need to listen for when the computer makes a move to draw its arrow
- * Add this to ensure the opponent's move is visible
+ * Centralized error feedback (Shake and Blink)
+ */
+function triggerErrorEffects() {
+    const $status = $('#status');
+    const $board = $('#myBoard');
+
+    // Reset and trigger status blink
+    $status.removeClass('blink-status');
+    void $status[0].offsetWidth; // Trigger reflow
+    $status.addClass('blink-status');
+
+    // Trigger board shake
+    $board.addClass('shake-board');
+    setTimeout(() => {
+        $board.removeClass('shake-board');
+    }, 300);
+}
+
+/**
+ * Computer move callback to ensure arrows are drawn
  */
 function onComputerMove(from, to) {
     if (typeof highlightMove === "function") {
@@ -123,7 +141,6 @@ function onComputerMove(from, to) {
 }
 
 /**
- * Event Listener for chessboard squares
- * Uses delegated events to ensure it works with chessboard.js rendered elements
+ * Event Listener setup
  */
-$(document).on('click', '#myBoard .square-55d63', onSquareClick);
+$(document).off('click', '#myBoard .square-55d63').on('click', '#myBoard .square-55d63', onSquareClick);
