@@ -4,15 +4,16 @@
  */
 
 // Note: 'board' and 'selectedSquare' are declared globally in game.js. 
-// Do not use 'let' or 'const' here to avoid Redeclaration Errors.
+// We do not use 'let' or 'const' here to avoid Redeclaration Errors.
 
 $(document).ready(function() {
     // Only initialize if not already initialized by another script
     if (typeof board !== 'undefined' && board === null) {
-        board = ChessBoard('myBoard', { 
+        board = Chessboard('myBoard', { 
             draggable: false,
             position: 'start',
-            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+            // Using your custom SVG set on GitHub
+            pieceTheme: 'https://raw.githubusercontent.com/jmcrd/enlightenupassets/main/img/pieces/icpieces/{piece}.svg'
         });
     }
 });
@@ -30,7 +31,7 @@ function updateUIBoard(fen, orientation = null) {
     board.position(fen);
     clearHighlights();
     
-    // Reset selection state
+    // Reset selection state for the next puzzle
     if (typeof selectedSquare !== 'undefined') {
         selectedSquare = null;
     }
@@ -45,13 +46,14 @@ function getBoardOrientation() {
 
 /**
  * Draws a real SVG arrow with Knight L-shapes and precise head alignment.
- * Optimized to prevent the "huge head" glitch and line-overlap.
+ * Optimized to prevent the "huge head" glitch by using a line-offset.
  */
 function highlightMove(from, to) {
     clearHighlights();
     const svg = document.getElementById('arrow-svg');
     if (!svg) return;
 
+    // Chessboard.js specific square class
     const $fromSq = $(`#myBoard .square-${from}`);
     const $toSq = $(`#myBoard .square-${to}`);
     if (!$fromSq.length || !$toSq.length) return;
@@ -60,7 +62,7 @@ function highlightMove(from, to) {
     const fromRect = $fromSq[0].getBoundingClientRect();
     const toRect = $toSq[0].getBoundingClientRect();
 
-    // Calculate center coordinates relative to the SVG container
+    // Center coordinates relative to the SVG container
     const x1 = fromRect.left + fromRect.width / 2 - boardRect.left;
     const y1 = fromRect.top + fromRect.height / 2 - boardRect.top;
     const x2 = toRect.left + toRect.width / 2 - boardRect.left;
@@ -72,20 +74,15 @@ function highlightMove(from, to) {
     const absDy = Math.abs(dy);
     const sqSize = fromRect.width; 
 
-    // Knight move detection (L-shape)
+    // Knight move detection logic
     const isKnightPattern = (Math.abs(absDx - sqSize * 2) < sqSize / 2 && Math.abs(absDy - sqSize) < sqSize / 2) ||
                             (Math.abs(absDy - sqSize * 2) < sqSize / 2 && Math.abs(absDx - sqSize) < sqSize / 2);
 
     let pathD = "";
-    
-    /** * OFFSET LOGIC:
-     * Shortens the line by 13px so it ends at the base of the 15px arrowhead.
-     */
-    const offset = 13; 
+    const offset = 13; // Shortens line so it doesn't poke through the arrowhead
 
     if (isKnightPattern) {
         let elbowX, elbowY;
-        // Draw the elbow based on the longer axis
         if (absDx > absDy) {
             elbowX = x2; elbowY = y1;
         } else {
@@ -110,7 +107,7 @@ function highlightMove(from, to) {
 
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", pathD);
-    path.setAttribute("stroke", "rgba(255, 215, 0, 0.75)"); // Gold transparency
+    path.setAttribute("stroke", "rgba(255, 215, 0, 0.75)"); 
     path.setAttribute("stroke-width", "9");
     path.setAttribute("fill", "none");
     path.setAttribute("stroke-linecap", "round");
@@ -129,19 +126,19 @@ function clearHighlights() {
     if (svg) {
         $(svg).find('path').remove();
     }
-    // Remove both standard and custom highlight classes
+    // Remove both standard chessboard.js and your custom highlight classes
     $('#myBoard .square-55d63').removeClass('highlight-sq highlight-from highlight-to');
 }
 
 /**
- * Alias for clearHighlights to maintain compatibility with other scripts
+ * Alias for clearHighlights to maintain compatibility
  */
 function removeHighlights() {
     clearHighlights();
 }
 
 /**
- * Handle resizing to keep board and SVG aligned
+ * Keep board and SVG aligned during window changes
  */
 $(window).resize(() => {
     if (board) {
