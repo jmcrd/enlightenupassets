@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChessPro | Tactical Trainer</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/css/chessboard-1.0.0.min.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/githubassets/base.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/githubassets/components.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/githubassets/overlays.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/githubassets/animations.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/githubassets/responsive.css">
+
+    <script src="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/js/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/js/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/js/chess.min.js"></script>
+</head>
+
+<body>
+    <div class="top-banner">
+        <a href="YOUR_CHANNEL_URL" target="_blank" class="banner-link">
+            <img src="https://raw.githubusercontent.com/jmcrd/enlightenupassets/main/githubassets/youtube.png" alt="YouTube Icon">
+            <span>SUBSCRIBE FOR MORE PUZZLES</span>
+        </a>
+    </div>
+
+    <div class="board-wrapper" style="position: relative;">
+        <div id="start-overlay">
+            <div class="brand-content">
+                <img src="https://raw.githubusercontent.com/jmcrd/chess/main/assets/immaculate_heart_of_mary30.png"
+                    alt="" class="brand-img">
+
+                <div class="brand-text-container">
+                    <h1 class="brand-logo">Lighten<span>up</span></h1>
+                    <div class="loading-bar-container">
+                        <div class="loading-bar"></div>
+                    </div>
+                    <p id="progress" style="margin-top: 10px;">Loading Puzzles...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="myBoard"></div>
+
+        <svg id="arrow-svg"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;">
+            <defs>
+                <marker id="arrowhead" markerWidth="15" markerHeight="15" refX="14" refY="7.5" orient="auto"
+                    markerUnits="userSpaceOnUse">
+                    <polygon points="0 0, 15 7.5, 0 15" fill="rgba(255, 215, 0, 0.9)" />
+                </marker>
+            </defs>
+        </svg>
+
+        <div id="success-overlay" style="display:none;">
+            <div class="success-content">
+                <img src="https://raw.githubusercontent.com/jmcrd/enlightenupassets/main/githubassets/check-mark.png"
+                    alt="Correct">
+                <h2>Correct!</h2>
+            </div>
+        </div>
+
+        <div id="final-success-overlay" style="display:none;">
+            <div class="success-content">
+                <a href="YOUR_CHANNEL_URL" target="_blank" class="youtube-link">
+                    <img src="https://raw.githubusercontent.com/jmcrd/enlightenupassets/main/githubassets/youtube.png"
+                        alt="Trophy">
+                    <h2>SUBSCRIBE FOR MORE</h2>
+                </a>
+
+                <div class="stats-summary" style="margin: 15px 0;">
+                    <p>Total Puzzles: <b id="stat-total">0</b></p>
+                    <p>✅ Correct: <b id="stat-correct" style="color: #4CAF50;">0</b></p>
+                    <p>❌ Solutions: <b id="stat-skipped" style="color: #ff5252;">0</b></p>
+                </div>
+
+                <button onclick="location.reload()" class="restart-btn">Play Again</button>
+            </div>
+        </div>
+
+        <div id="error-overlay" style="display:none;">
+            <div class="error-content">
+                <img src="https://raw.githubusercontent.com/jmcrd/enlightenupassets/main/githubassets/no.png"
+                    alt="Incorrect">
+                <h2>Oops!</h2>
+                <div class="overlay-button-group">
+                    <button id="retry-btn" class="btn-retry">Try Again</button>
+                    <button id="show-solution-btn" class="btn-solution">Show Solution</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="promotion-dialog" style="display:none;">
+            <button data-piece="q"><img
+                    src="https://raw.githubusercontent.com/jmcrd/enlightenupassets/main/img/pieces/icpieces/wQ.svg"
+                    alt="Queen"></button>
+            <button data-piece="r"><img
+                    src="https://raw.githubusercontent.com/jmcrd/enlightenupassets/main/img/pieces/icpieces/wR.svg"
+                    alt="Rook"></button>
+            <button data-piece="b"><img
+                    src="https://raw.githubusercontent.com/jmcrd/enlightenupassets/main/img/pieces/icpieces/wB.svg"
+                    alt="Bishop"></button>
+            <button data-piece="n"><img
+                    src="https://raw.githubusercontent.com/jmcrd/enlightenupassets/main/img/pieces/icpieces/wN.svg"
+                    alt="Knight"></button>
+        </div>
+    </div>
+
+    <div class="status-container">
+        <div id="status">Ready...</div>
+        <div id="game-progress"></div>
+        <button id="next-puzzle-btn" class="next-btn" style="display:none;">Next Puzzle</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/githubassets/game.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/githubassets/board_ui.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/githubassets/overlays_ui.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/githubassets/input_handler.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/jmcrd/enlightenupassets@main/githubassets/app.js"></script>
+
+</body>
+
+</html>
