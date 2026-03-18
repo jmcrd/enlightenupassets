@@ -1,54 +1,47 @@
 /**
  * interaction.js
- * Handles clicks on the chessboard squares, promotions, and move finalization.
+ * Handles clicks, promotions, and move validation.
  */
 
-/**
- * Handles clicks on the chessboard squares
- */
 function onSquareClick() {
-    if (lockBoard) return;
+    if (window.lockBoard) return;
 
-    // Use the attribute provided by Chessboard.js
+    // Use 'this' to get the square coordinate (e.g., "e4")
     const square = $(this).attr('data-square');
+    if (!square) return;
 
-    // 1. Toggle off if clicking the same square twice
-    if (selectedSquare === square) {
-        if (typeof removeHighlights === "function") removeHighlights();
-        selectedSquare = null;
+    // 1. Deselect if clicking the same square
+    if (window.selectedSquare === square) {
+        clearHighlights();
+        window.selectedSquare = null;
         return;
     }
 
-    // 2. If a square was already selected, this second click is a move attempt
-    if (selectedSquare) {
-        processMoveAttempt(selectedSquare, square);
+    // 2. If we already have a selection, this is a Move Attempt
+    if (window.selectedSquare) {
+        processMoveAttempt(window.selectedSquare, square);
         return;
     }
 
-    // 3. Initial selection of a piece
+    // 3. Initial selection
     const piece = game.get(square);
 
-    if (piece) {
-        // Only allow selecting pieces of the side whose turn it is
-        if (piece.color === game.turn()) {
-            selectedSquare = square;
-            // Clear existing and add new highlight
-            if (typeof removeHighlights === "function") removeHighlights();
-            $(this).addClass('highlight-sq');
-        } else {
-            // Visual feedback for clicking the wrong color
-            triggerErrorEffects();
-        }
+    // Only allow selecting a piece if it belongs to the player whose turn it is
+    if (piece && piece.color === game.turn()) {
+        window.selectedSquare = square;
+        
+        clearHighlights();
+        $(this).addClass('highlight-sq'); // Defined in your components.css
+    } else if (piece) {
+        // User clicked opponent's piece first
+        triggerErrorEffects();
     }
 }
 
-/**
- * Determines if a move is a promotion or a standard move
- */
 function processMoveAttempt(source, target) {
     const piece = game.get(source);
 
-    // Promotion check: Pawn reaching the 8th (white) or 1st (black) rank
+    // Promotion check
     const isPromotion =
         piece &&
         piece.type === 'p' &&
@@ -56,91 +49,69 @@ function processMoveAttempt(source, target) {
          (piece.color === 'b' && target[1] === '1'));
 
     if (isPromotion) {
-        // Store move and wait for user to pick a piece in the dialog
-        pendingMove = { from: source, to: target };
+        window.pendingMove = { from: source, to: target };
         if (typeof showPromotionDialog === "function") {
             showPromotionDialog(piece.color);
         } else {
-            // Fallback to Queen if no dialog function exists
             finalizeUIMove(source, target, 'q');
         }
     } else {
-        // Standard move
         finalizeUIMove(source, target, 'q');
     }
 }
 
-/**
- * Finalizes the move, validates against the puzzle solution, and updates UI
- */
 function finalizeUIMove(source, target, promo) {
+    // validateMove is in game.js
     const result = validateMove(source, target, promo);
 
     if (result.success) {
-        // 1. Update the visual board
+        // Update Board
         if (typeof updateUIBoard === "function") {
             updateUIBoard(result.fen);
         }
 
-        // 2. Draw the Gold Arrow for your own correct move
+        // Draw Arrow
         if (typeof highlightMove === "function") {
             highlightMove(source, target);
         }
 
-        // 3. Cleanup UI states
+        window.selectedSquare = null;
         $('#promotion-dialog').fadeOut(200);
-        selectedSquare = null;
 
-        // 4. Check if puzzle is done
+        // Completion Logic
         if (result.isComplete) {
-            if (typeof handlePuzzleComplete === "function") {
-                handlePuzzleComplete();
-            }
-        } else {
-            // Delay for computer response (if applicable)
             setTimeout(() => {
-                if (typeof checkAutoMove === "function") {
-                    checkAutoMove();
+                if (typeof handlePuzzleComplete === "function") {
+                    handlePuzzleComplete();
                 }
-            }, 600);
+            }, 300);
         }
     } else {
-        // Move was incorrect
+        // Move was wrong or illegal
         triggerErrorEffects();
-        if (typeof removeHighlights === "function") removeHighlights();
-        selectedSquare = null;
+        clearHighlights();
+        window.selectedSquare = null;
     }
 }
 
-/**
- * Centralized error feedback (Shake and Blink)
- */
 function triggerErrorEffects() {
     const $status = $('#status');
     const $board = $('#myBoard');
 
-    // Reset and trigger status blink
     $status.removeClass('blink-status');
-    void $status[0].offsetWidth; // Trigger reflow
+    void $status[0].offsetWidth; 
     $status.addClass('blink-status');
 
-    // Trigger board shake
     $board.addClass('shake-board');
-    setTimeout(() => {
-        $board.removeClass('shake-board');
-    }, 300);
-}
-
-/**
- * Computer move callback to ensure arrows are drawn
- */
-function onComputerMove(from, to) {
-    if (typeof highlightMove === "function") {
-        highlightMove(from, to);
-    }
+    setTimeout(() => { $board.removeClass('shake-board'); }, 300);
 }
 
 /**
  * Event Listener setup
+ * Using a robust selector that doesn't rely on random IDs
  */
-$(document).off('click', '#myBoard .square-55d63').on('click', '#myBoard .square-55d63', onSquareClick);
+$(document).ready(function() {
+    // Target any DIV inside myBoard that has a 'data-square' attribute
+    $(document).off('click', '#myBoard [data-square]')
+               .on('click', '#myBoard [data-square]', onSquareClick);
+});
