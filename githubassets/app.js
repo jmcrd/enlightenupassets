@@ -29,12 +29,16 @@ async function initTrainer() {
     try {
         if (progressText) progressText.innerText = "Loading Puzzle Pack...";
 
-        const response = await fetch(JSON_URL);
-        if (!response.ok) throw new Error('Failed to fetch JSON from GitHub');
+        // Added cache-busting (?v=...) to ensure you get the freshest version from GitHub
+        const response = await fetch(JSON_URL + "?v=" + new Date().getTime());
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         
         const jsonData = await response.json();
 
-        // Store the full array of puzzle objects {id, fen, moves, rating, themes}
+        // Store the full array of puzzle objects
         window.puzzlePool = jsonData;
         
         // Shuffle the deck for variety
@@ -50,16 +54,27 @@ async function initTrainer() {
             // Smooth transition into the game
             setTimeout(() => {
                 $(startOverlay).fadeOut(800);
-            }, 2000); 
+            }, 1500); 
 
         } else {
-            if (status) status.innerText = "Error: JSON file contains no puzzles.";
-            $(startOverlay).fadeOut(300);
+            throw new Error("JSON file is empty or formatted incorrectly.");
         }
     } catch (err) {
-        if (status) status.innerText = "Connection Error. Please refresh.";
-        $(startOverlay).fadeOut(300);
         console.error("Initialization Error:", err);
+        
+        // Inform user about the specific error
+        if (status) {
+            status.innerText = "Error: " + err.message;
+        }
+        
+        if (progressText) {
+            // Check if user is running from file:// which causes CORS issues
+            if (window.location.protocol === 'file:') {
+                progressText.innerHTML = "<span style='color: #ff5252;'>CORS Error: Please run this using a Local Server (e.g., VS Code Live Server).</span>";
+            } else {
+                progressText.innerText = "Check your internet connection or GitHub link.";
+            }
+        }
     }
 }
 
@@ -81,6 +96,8 @@ function loadNextPuzzle() {
     // Calls setupGame in game.js
     if (typeof setupGame === "function") {
         setupGame(puzzleData);
+    } else {
+        console.error("setupGame function not found. Check if game.js is loaded correctly.");
     }
     
     // Update the "Puzzle X / Y" text
@@ -97,16 +114,14 @@ function showFinalStats() {
     const correct = window.stats.correct;
     const skipped = window.stats.skipped;
 
-    // 1. Update the specific ID elements found in your HTML for cleaner UI
+    // Update the specific ID elements found in your HTML
     if (document.getElementById('stat-total')) document.getElementById('stat-total').innerText = total;
     if (document.getElementById('stat-correct')) document.getElementById('stat-correct').innerText = correct;
     if (document.getElementById('stat-skipped')) document.getElementById('stat-skipped').innerText = skipped;
 
-    // 2. Backup: Dynamically inject the full content box in case the HTML structure changes
     const finalContent = document.querySelector('#final-success-overlay .success-content');
     
     if (finalContent) {
-        // We only rewrite the innerHTML if the IDs above aren't used or to refresh the link/button
         finalContent.innerHTML = `
             <a href="YOUR_CHANNEL_URL" target="_blank" class="youtube-link">
                 <img src="https://raw.githubusercontent.com/jmcrd/enlightenupassets/main/githubassets/youtube.png" alt="Youtube">
@@ -125,6 +140,5 @@ function showFinalStats() {
 
     $('#final-success-overlay').fadeIn(400);
     
-    // Stop any further interaction with the board
-    if (typeof lockBoard !== 'undefined') lockBoard = true; 
+    if (typeof lockBoard !== 'undefined') window.lockBoard = true; 
 }
