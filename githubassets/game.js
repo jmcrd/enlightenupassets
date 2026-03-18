@@ -8,7 +8,7 @@ window.board = null;
 window.selectedSquare = null;
 
 let game = new Chess();
-let solutionHistory = []; // Now stores the moves from the JSON
+let solutionHistory = []; // Stores move objects {from, to, promotion}
 let currentMoveIndex = 0;
 let lockBoard = false;
 let pendingMove = null;
@@ -40,30 +40,38 @@ function setupGame(puzzleData) {
     }
 
     // 2. Parse solution from the "moves" field
-    // Lichess moves are usually space-separated strings (e.g., "e2e4 d7d5")
+    // Converts Lichess UCI (e2e4) into internal move objects
     if (puzzleData.moves) {
-        // We split the moves into an array
         const movesArray = puzzleData.moves.split(' ');
-        
-        // Convert UCI moves (e2e4) to SAN (e4) for internal validation/display
         solutionHistory = [];
         const tempGame = new Chess(puzzleData.fen);
         
         for (const uci of movesArray) {
-            const move = tempGame.move({
+            const moveObj = {
                 from: uci.substring(0, 2),
                 to: uci.substring(2, 4),
                 promotion: uci.length === 5 ? uci[4] : 'q'
-            });
-            if (move) solutionHistory.push(move.san);
+            };
+            
+            // Validate move and store it
+            const validMove = tempGame.move(moveObj);
+            if (validMove) {
+                solutionHistory.push(validMove); // Stores the full move object (san, from, to)
+            }
         }
     } else {
         // Fallback: If no moves provided, try to find checkmate automatically
-        const mateMove = game.moves().find(m => m.includes('#'));
-        solutionHistory = mateMove ? [mateMove] : [];
+        const mateMoveSAN = game.moves().find(m => m.includes('#'));
+        if (mateMoveSAN) {
+            const tempMove = game.move(mateMoveSAN);
+            solutionHistory = [tempMove];
+            game.undo();
+        } else {
+            solutionHistory = [];
+        }
     }
 
-    // 3. Determine Orientation
+    // 3. Determine Orientation (Who is moving?)
     const orientation = game.turn() === 'w' ? 'white' : 'black';
     
     // 4. Update UI
@@ -82,16 +90,20 @@ function setupGame(puzzleData) {
  * Validates if a user move matches the puzzle solution
  */
 function validateMove(source, target, promoPiece = 'q') {
-    // Check if user is trying to make a move while board is locked
     if (lockBoard) return { success: false };
 
-    const move = game.move({ from: source, to: target, promotion: promoPiece });
+    // Create the move attempt
+    const moveAttempt = { from: source, to: target, promotion: promoPiece };
+    const correctMove = solutionHistory[currentMoveIndex];
 
-    // Validate against the specific move in solutionHistory
-    if (!move || move.san !== solutionHistory[currentMoveIndex]) {
-        if (move) game.undo(); 
+    // Check if the source and target match the solution
+    if (!correctMove || source !== correctMove.from || target !== correctMove.to) {
         return { success: false };
     }
+
+    // Execute the move in the engine
+    const result = game.move(moveAttempt);
+    if (!result) return { success: false };
 
     currentMoveIndex++;
     
@@ -99,7 +111,7 @@ function validateMove(source, target, promoPiece = 'q') {
     const isComplete = currentMoveIndex >= solutionHistory.length;
     
     if (isComplete && !wasSkipped) {
-        window.stats.correct++;
+        if (window.stats) window.stats.correct++;
     }
 
     return { 
@@ -118,33 +130,34 @@ async function playSolution() {
     
     if (!wasSkipped) {
         wasSkipped = true;
-        window.stats.skipped++;
+        if (window.stats) window.stats.skipped++;
     }
 
     // Start from wherever the user left off
     for (let i = currentMoveIndex; i < solutionHistory.length; i++) {
-        const moveSAN = solutionHistory[i];
-        const moveObj = game.move(moveSAN);
+        const moveObj = solutionHistory[i];
         
-        if (moveObj) {
-            game.undo(); // Undo to show the animation
-            if (typeof window.highlightMove === "function") {
-                window.highlightMove(moveObj.from, moveObj.to);
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, 600)); 
-            game.move(moveSAN);
-            updateUIBoard(game.fen());
-            
-            await new Promise(resolve => setTimeout(resolve, 400)); 
-            if (typeof window.clearHighlights === "function") window.clearHighlights();
+        // Visual feedback
+        if (typeof window.highlightMove === "function") {
+            window.highlightMove(moveObj.from, moveObj.to);
         }
+        
+        await new Promise(resolve => setTimeout(resolve, 600)); 
+        
+        // Execute move
+        game.move(moveObj);
+        if (typeof updateUIBoard === "function") {
+            updateUIBoard(game.fen());
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 400)); 
+        if (typeof window.clearHighlights === "function") window.clearHighlights();
     }
 
     const statusEl = document.getElementById('status');
-    if (statusEl) statusEl.innerHTML = "<span class='highlight'>Solution Revealed</span>";
+    if (statusEl) statusEl.innerHTML = "<span style='color: #ff5252;'>Solution Revealed</span>";
 
-    if (window.currentPuzzleIndex < window.puzzlePool.length) {
+    if (window.puzzlePool && window.currentPuzzleIndex < window.puzzlePool.length) {
         $('#next-puzzle-btn').fadeIn(300);
     } else {
         setTimeout(() => {
@@ -154,15 +167,10 @@ async function playSolution() {
 }
 
 /**
- * Empty check for auto-moves (Handled by user in Mate in 1)
+ * Handles logic after a successful move
  */
-function checkAutoMove() {
-    // Current setup assumes the FEN starts on the user's turn to mate.
-    // If the computer needs to play the first move, it would go here.
-}
-
 function handlePuzzleComplete() {
-    if (window.currentPuzzleIndex < window.puzzlePool.length) {
+    if (window.puzzlePool && window.currentPuzzleIndex < window.puzzlePool.length) {
         $('#success-overlay').fadeIn(300).delay(1000).fadeOut(300, function() {
             $('#next-puzzle-btn').fadeIn(300);
         });
@@ -178,4 +186,9 @@ function updateStatusText() {
     if (!statusEl) return;
     const turn = game.turn() === 'w' ? "White" : "Black";
     statusEl.innerHTML = `Solve: <span class='highlight'>${turn} to move (Mate in 1)</span>`;
+}
+
+function checkAutoMove() {
+    // If the computer needs to play the first move (puzzles where you respond),
+    // logic would be added here.
 }
